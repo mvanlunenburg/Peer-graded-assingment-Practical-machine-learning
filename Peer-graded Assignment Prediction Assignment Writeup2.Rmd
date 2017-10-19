@@ -1,0 +1,85 @@
+---
+title: "Peer graded assingment Practical machine learning"
+author: "MvL"
+date: "16 oktober 2017"
+output: html_document
+---
+In this report data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants will be used to predict in a test set of the (in)correctness of the movements. The participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+There are five classes indicating the performance of the excercise, Class A corresponds to the specified execution of the exercise, the others indicate common mistakes. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience.
+The data for this project is kindly provided from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+
+##Packages needed
+
+```{r packages, echo=TRUE}
+#Download the packages needed to run this report.
+library(caret)
+library(rpart)
+```
+
+
+##Data Exploration
+The raw data is downloaded and processed for making a prediction on performance of weight lifting exercise on 6 participants. 
+```{r load, echo=TRUE, cache = TRUE}
+training <- read.csv2("../data/pml-training.csv", header=TRUE, sep= ",", fill = TRUE, na.strings = c("NA", "#DIV/0!", ""))
+testing <- read.csv2("../data/pml-testing.csv", header=TRUE, sep= ",", fill = TRUE, na.strings = c("NA", "#DIV/0!", ""))
+```
+
+There is a lot of missing data in the datasets, in the next steps the columns with missing data and the first columns with data that can not be included to predict on is filtered out of the datasets. A test set and a training set are created to make and test the models. 
+
+```{r data explore, echo=FALSE}
+#delete missing variables with missing values in testset
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+
+#remove non informational columns 1-7
+training_sel<- training[, -c(1:7)]
+testing_sel<- testing[, -c(1:7)]
+```
+
+
+```{r preparation models, echo=FALSE}
+#Split training set in two diferent sets
+inTrain <- createDataPartition(y=training_sel$classe,p=0.7, list=FALSE)
+training_data_sel <- training_sel[inTrain,]
+testing_data_sel <- training_sel[-inTrain,]
+dim(training_data_sel); dim(testing_data_sel)
+```
+
+
+## Prediction models
+
+Two different models will be tested to predict class in the weight lifting experiment. First a decision tree model is trained and tested, on the other hand a random forest model will be executed.
+
+```{r fit and predict decision tree model, echo=FALSE}
+#Make a decision tree model
+set.seed(2235)
+modFitDT <- rpart(classe ~ ., data = training_data_sel, method = "class")
+
+#Predict with decision tree
+DT_pred <- predict(modFitDT, testing_data_sel, type = "class")
+#Show the decision tree and performance of the decision tree model
+rpart.plot(modFitDT, main = "Decision Tree", under = T, faclen = 0)
+confusionMatrix(DT_pred, testing_data_sel$classe)
+```
+
+
+```{r fit random forest model, echo=FALSE}
+#Make a random forest model with 10-fold crossvalidation and 10 trees 
+set.seed(2236)
+fitcontrol <- trainControl(method="cv",number=10,allowParallel = TRUE)
+modFitRF <- train(classe ~ .,data=training_data_sel,method="rf",trControl=fitcontrol, ntree=10)
+
+#Predict and show performance of random forest model
+RF_pred <- predict(modFitRF, testing_data_sel, type = "class")
+confusionMatrix(randomForestPrediction, testingDataSet$classe)
+
+```
+
+## Conclusions
+The random forest model performance has a higher accuracy than the decision tree model, i.e. 0.7 vs >0.9, and therefore this random forest model is a good model to predict the correct execution of a weight lifting exercise. 
+A large part of the dataset was not usefull to predict performance and not included in the prediction.  
+
+###Reference
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
