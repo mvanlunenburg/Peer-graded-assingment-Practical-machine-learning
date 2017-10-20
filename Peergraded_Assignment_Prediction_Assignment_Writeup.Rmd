@@ -2,7 +2,9 @@
 title: "Peer graded assingment Practical machine learning"
 author: "MvL"
 date: "16 oktober 2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 In this report data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants will be used to predict in a test set of the (in)correctness of the movements. The participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
 
@@ -10,7 +12,6 @@ There are five classes indicating the performance of the excercise, Class A corr
 The data for this project is kindly provided from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
 
 ##Packages needed
-
 ```{r packages, echo=TRUE}
 #Load the packages needed to run this report.
 library(caret)
@@ -18,7 +19,6 @@ library(rpart)
 library(rpart)
 library(rpart.plot)
 ```
-
 
 ##Data Exploration
 The raw data is downloaded and processed for making a prediction on performance of weight lifting exercise on 6 participants. 
@@ -33,7 +33,7 @@ testing <- read.csv(url(testUrl), na.strings = c("NA", "#DIV/0!", ""))
 
 There is a lot of missing data in the datasets, in the next steps the columns with missing data and the first columns with data that can not be included to predict on, is filtered out of the datasets. A validation set and a training set are created from the training data to train and validate the models. 
 
-```{r data explore, echo=FALSE}
+```{r data explore, echo=TRUE, cache = TRUE}
 #delete missing variables with missing values in testset
 training <- training[, colSums(is.na(training)) == 0]
 testing <- testing[, colSums(is.na(testing)) == 0]
@@ -44,7 +44,7 @@ testing_sel<- testing[, -c(1:7)]
 ```
 
 
-```{r preparation models, echo=FALSE}
+```{r preparation models,echo=TRUE, cache = TRUE}
 #Split training set in two diferent sets
 inTrain <- createDataPartition(y=training_sel$classe,p=0.7, list=FALSE)
 training_data <- training_sel[inTrain,]
@@ -52,12 +52,10 @@ validation_data <- training_sel[-inTrain,]
 dim(training_data); dim(validation_data)
 ```
 
-
 ##Prediction models validation
-
 Two different models will be tested to predict class in the weight lifting experiment. First a decision tree model is trained and validated, on the other hand a random forest model will be executed. 
 
-```{r fit and validate decision tree model, echo=FALSE}
+```{r fit and validate decision tree model, echo=TRUE, cache = TRUE}
 #Make a decision tree model
 set.seed(2235)
 modFitDT <- rpart(classe ~ ., data = training_data, method = "class")
@@ -71,7 +69,7 @@ confusionMatrix(DT_pred, validation_data$classe)
 ```
 
 
-```{r fit and validate random forest model, echo=FALSE}
+```{r fit and validate random forest model, echo=TRUE, cache = TRUE}
 #Make a random forest model with 10-fold crossvalidation and 10 trees 
 set.seed(2236)
 fitcontrol <- trainControl(method="cv",number=10,allowParallel = TRUE)
@@ -82,20 +80,17 @@ RF_pred <- predict(modFitRF, validation_data)
 confusionMatrix(RF_pred, validation_data$classe)
 ```
 ##Model selection 
-
 The random forest model performance has a higher accuracy than the decision tree model, i.e. 0.99 vs 0.74, therefore the random forest model is selected as final model to predict the correct execution of a weight lifting exercise. 
 A large part of the dataset was not usefull to predict performance and not included in the prediction. However even excluding this data gives a near perfect prediction on the validation set. 
 
-```{r fit final model, echo=FALSE}
+```{r fit final model, echo=TRUE, cache = TRUE}
 #Prediction on testing dataset 
 RF_pred_def <- predict(modFitRF, testing)
 test_pred <-cbind(RF_pred_def, testing)
 qplot(RF_pred_def, data=testing, main="Distribution of Classes")
 ```
-
 ##Conclusion
 The prediction shows that the predicted classes of the 20 test cases. 
 
 ###Reference
-
 Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
